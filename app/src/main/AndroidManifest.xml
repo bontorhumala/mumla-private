@@ -119,6 +119,11 @@
         </activity>
 
         <activity
+            android:name=".auth.LoginActivity"
+            android:label="Login"
+            android:theme="@style/Theme.Mumla" />
+
+        <activity
             android:name=".preference.CertificateSelectActivity"
             android:theme="@style/Base.Theme.AppCompat.Light.Dialog"
             android:exported="true">

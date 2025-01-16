@@ -165,6 +165,5 @@ public class FavouriteServerListFragment extends Fragment implements OnItemClick
 
     public static interface ServerConnectHandler {
         public void connectToServer(Server server);
-        public void connectToPublicServer(PublicServer server);
     }
 }

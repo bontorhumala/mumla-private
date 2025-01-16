@@ -83,6 +83,7 @@ import se.lublin.humla.util.MumbleURLParser;
 import se.lublin.mumla.BuildConfig;
 import se.lublin.mumla.R;
 import se.lublin.mumla.Settings;
+import se.lublin.mumla.auth.LoginActivity;
 import se.lublin.mumla.channel.AccessTokenFragment;
 import se.lublin.mumla.channel.ChannelFragment;
 import se.lublin.mumla.channel.ServerInfoFragment;
@@ -90,11 +91,10 @@ import se.lublin.mumla.db.DatabaseCertificate;
 import se.lublin.mumla.db.DatabaseProvider;
 import se.lublin.mumla.db.MumlaDatabase;
 import se.lublin.mumla.db.MumlaSQLiteDatabase;
-import se.lublin.mumla.db.PublicServer;
+import se.lublin.mumla.messenger.MessengerFragment;
 import se.lublin.mumla.preference.MumlaCertificateGenerateTask;
 import se.lublin.mumla.preference.Preferences;
 import se.lublin.mumla.servers.FavouriteServerListFragment;
-import se.lublin.mumla.servers.PublicServerListFragment;
 import se.lublin.mumla.servers.ServerEditFragment;
 import se.lublin.mumla.service.IMumlaService;
 import se.lublin.mumla.service.MumlaService;
@@ -103,10 +103,17 @@ import se.lublin.mumla.util.HumlaServiceProvider;
 import se.lublin.mumla.util.MumlaTrustStore;
 
 public class MumlaActivity extends AppCompatActivity implements ListView.OnItemClickListener,
-        FavouriteServerListFragment.ServerConnectHandler, HumlaServiceProvider, DatabaseProvider,
-        SharedPreferences.OnSharedPreferenceChangeListener, DrawerAdapter.DrawerDataProvider,
-        ServerEditFragment.ServerEditListener {
+        HumlaServiceProvider, DatabaseProvider, FavouriteServerListFragment.ServerConnectHandler,
+        SharedPreferences.OnSharedPreferenceChangeListener,
+        DrawerAdapter.DrawerDataProvider, ServerEditFragment.ServerEditListener {
     private static final String TAG = MumlaActivity.class.getName();
+
+    // Hardcode data server
+    private static final String HOTEL_SERVER_HOSTNAME = "192.168.130.126";
+    private static final int HOTEL_SERVER_PORT = 64738; // default Mumble
+    // Variabel untuk menampung username/password dari login
+    private String hotelUsername;
+    private String hotelPassword;
 
     /**
      * If specified, the provided integer drawer fragment ID is shown when the activity is created.
@@ -163,11 +170,14 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private HumlaObserver mObserver = new HumlaObserver() {
         @Override
         public void onConnected() {
+            loadDrawerFragment(DrawerAdapter.ITEM_MESSENGER);
+
+            /* Kode asli Mumla, load PINNED CHANNELS atau SERVER
             if (mSettings.shouldStartUpInPinnedMode()) {
                 loadDrawerFragment(DrawerAdapter.ITEM_PINNED_CHANNELS);
             } else {
                 loadDrawerFragment(DrawerAdapter.ITEM_SERVER);
-            }
+            } */
 
             mDrawerAdapter.notifyDataSetChanged();
             supportInvalidateOptionsMenu();
@@ -264,8 +274,25 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         setTheme(mSettings.getTheme());
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
+        String hotelUsername;
+        String hotelPassword;
+
+        // Cek apakah sudah login
+        if (!isUserLoggedIn()) {
+            // Belum login, pindah ke LoginActivity
+            Intent intent = new Intent(MumlaActivity.this, LoginActivity.class);
+            startActivity(intent);
+            // Agar tidak bisa kembali ke MumlaActivity, panggil finish()
+            finish();
+            return;
+        } else {
+            SharedPreferences prefs = getSharedPreferences("my_app_prefs", MODE_PRIVATE);
+            hotelUsername = prefs.getString("HOTEL_USERNAME", "Guest");
+            hotelPassword = prefs.getString("HOTEL_PASSWORD", "");
+        }
+
+        setContentView(R.layout.activity_main);
         setStayAwake(mSettings.shouldStayAwake());
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
@@ -274,6 +301,13 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         mDatabase = new MumlaSQLiteDatabase(this); // TODO add support for cloud storage
         mDatabase.open();
 
+        // Buat Server object & Connect ke server hotel
+        long id_server = 1;
+        Server hotelServer = new Server(id_server,"Hotel Voice Server", HOTEL_SERVER_HOSTNAME,
+                HOTEL_SERVER_PORT, hotelUsername, hotelPassword);
+        connectToServer(hotelServer);
+
+        // Mumla original OnCreate code
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         mDrawerList = (ListView) findViewById(R.id.left_drawer);
         mDrawerList.setOnItemClickListener(this);
@@ -387,7 +421,10 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     protected void onDestroy() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         preferences.unregisterOnSharedPreferenceChangeListener(this);
-        mDatabase.close();
+        // Cek apakah mDatabase sudah diinisialisasi sebelum memanggil close()
+        if (mDatabase != null) {
+            mDatabase.close();
+        }
         super.onDestroy();
     }
 
@@ -506,6 +543,10 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         Class<? extends Fragment> fragmentClass = null;
         Bundle args = new Bundle();
         switch (fragmentId) {
+            case DrawerAdapter.ITEM_MESSENGER:
+                // Muat layout dengan dua tombol
+                fragmentClass = MessengerFragment.class;
+                break;
             case DrawerAdapter.ITEM_SERVER:
                 fragmentClass = ChannelFragment.class;
                 break;
@@ -525,9 +566,6 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
             case DrawerAdapter.ITEM_FAVOURITES:
                 fragmentClass = FavouriteServerListFragment.class;
                 break;
-            case DrawerAdapter.ITEM_PUBLIC:
-                fragmentClass = PublicServerListFragment.class;
-                break;
             case DrawerAdapter.ITEM_SETTINGS:
                 Intent prefIntent = new Intent(this, Preferences.class);
                 startActivity(prefIntent);
@@ -537,10 +575,16 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         }
         Fragment fragment = Fragment.instantiate(this, fragmentClass.getName(), args);
         getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.content_frame, fragment, fragmentClass.getName())
-                    .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-                    .commit();
+                .replace(R.id.content_frame, fragment, fragmentClass.getName())
+                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                .commit();
         setTitle(mDrawerAdapter.getItemWithId(fragmentId).title);
+    }
+
+    private boolean isUserLoggedIn() {
+        // Misalnya pakai SharedPreferences
+        SharedPreferences prefs = getSharedPreferences("my_app_prefs", MODE_PRIVATE);
+        return prefs.getBoolean("IS_LOGGED_IN", false);
     }
 
     public void connectToServer(final Server server) {
@@ -681,32 +725,6 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
             Log.d(TAG, "isPortOpen() " + e);
         }
         return false;
-    }
-    public void connectToPublicServer(final PublicServer server) {
-        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
-
-        final Settings settings = Settings.getInstance(this);
-
-        // Allow username entry
-        final EditText usernameField = new EditText(this);
-        usernameField.setHint(settings.getDefaultUsername());
-        alertBuilder.setView(usernameField);
-
-        alertBuilder.setTitle(R.string.connectToServer);
-
-        alertBuilder.setPositiveButton(R.string.connect, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                PublicServer newServer = server;
-                if(!usernameField.getText().toString().equals(""))
-                    newServer.setUsername(usernameField.getText().toString());
-                else
-                    newServer.setUsername(settings.getDefaultUsername());
-                connectToServer(newServer);
-            }
-        });
-
-        alertBuilder.show();
     }
 
     private void setStayAwake(boolean stayAwake) {
