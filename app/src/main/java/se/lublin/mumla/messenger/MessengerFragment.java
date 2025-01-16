@@ -28,12 +28,6 @@ public class MessengerFragment extends Fragment implements SharedPreferences.OnS
         MessengerPagerAdapter adapter = new MessengerPagerAdapter(getChildFragmentManager());
         viewPager.setAdapter(adapter);
 
-        // Setup List Fragment di kiri
-        MessengerListFragment listFragment = new MessengerListFragment();
-        getChildFragmentManager().beginTransaction()
-                .replace(R.id.left_frame, listFragment)
-                .commit();
-
         return view;
     }
 

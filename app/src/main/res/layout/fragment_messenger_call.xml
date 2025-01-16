@@ -3,19 +3,40 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:orientation="horizontal">
 
-    <EditText
-        android:id="@+id/editTextPhoneNumber"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Enter phone number" />
+    <!-- Daftar Kontak di Kiri -->
+    <ListView
+        android:id="@+id/listViewContacts"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:divider="@android:color/darker_gray"
+        android:dividerHeight="1dp" />
 
-    <Button
-        android:id="@+id/buttonStartCall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Start Call"
-        android:layout_marginTop="16dp" />
+    <!-- Dialpad dan Tombol Call di Kanan -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="2"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <!-- Input Nomor -->
+        <EditText
+            android:id="@+id/etPhoneNumber"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter number"
+            android:inputType="phone"
+            android:padding="8dp" />
+
+        <!-- Tombol Panggilan -->
+        <Button
+            android:id="@+id/btnMakeCall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Call" />
+    </LinearLayout>
 </LinearLayout>

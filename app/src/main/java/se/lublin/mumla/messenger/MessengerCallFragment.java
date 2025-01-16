@@ -1,38 +1,46 @@
 package se.lublin.mumla.messenger;
 
+import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.util.Log;
-
-import android.os.Bundle;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.Toast;
 
-import androidx.fragment.app.Fragment;
-import androidx.annotation.Nullable;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
 import se.lublin.mumla.R;
-import se.lublin.mumla.app.MumlaActivity;
 
 public class MessengerCallFragment extends Fragment {
-    private static final String TAG = MessengerCallFragment.class.getName();
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_messenger_call, container, false);
 
-        Button callButton = view.findViewById(R.id.buttonStartCall);
-        EditText phoneNumberInput = view.findViewById(R.id.editTextPhoneNumber);
+        // Setup daftar kontak
+        ListView listViewContacts = view.findViewById(R.id.listViewContacts);
+        String[] contacts = {"Resepsionis", "Teknisi", "Restoran"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_list_item_1,
+                contacts
+        );
+        listViewContacts.setAdapter(adapter);
 
-        callButton.setOnClickListener(v -> {
-            String phoneNumber = phoneNumberInput.getText().toString();
-            MumlaActivity activity = (MumlaActivity) getActivity();
-            if (activity != null && !phoneNumber.isEmpty()) {
-                // activity.startCall(phoneNumber);
-                Log.d(TAG, "Call to: " + phoneNumber);
+        // Setup input nomor dan tombol panggilan
+        EditText etPhoneNumber = view.findViewById(R.id.etPhoneNumber);
+        Button btnMakeCall = view.findViewById(R.id.btnMakeCall);
+
+        btnMakeCall.setOnClickListener(v -> {
+            String phoneNumber = etPhoneNumber.getText().toString();
+            if (!phoneNumber.isEmpty()) {
+                Toast.makeText(requireContext(), "Calling " + phoneNumber, Toast.LENGTH_SHORT).show();
             }
         });
 

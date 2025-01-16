@@ -14,11 +14,10 @@ public class MessengerPagerAdapter extends FragmentPagerAdapter {
     @NonNull
     @Override
     public Fragment getItem(int position) {
-        // Tentukan fragment untuk setiap tab
         if (position == 0) {
-            return new MessengerChatFragment();
+            return new MessengerChatFragment(); // Tab Chat
         } else {
-            return new MessengerCallFragment();
+            return new MessengerCallFragment(); // Tab Call
         }
     }
 
@@ -29,11 +28,6 @@ public class MessengerPagerAdapter extends FragmentPagerAdapter {
 
     @Override
     public CharSequence getPageTitle(int position) {
-        // Judul untuk setiap tab
-        if (position == 0) {
-            return "Chat";
-        } else {
-            return "Call";
-        }
+        return (position == 0) ? "Chat" : "Call";
     }
 }
