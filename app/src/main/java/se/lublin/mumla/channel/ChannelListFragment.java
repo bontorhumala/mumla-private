@@ -49,6 +49,9 @@ import androidx.core.view.MenuItemCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.Arrays;
+import java.util.List;
+
 import se.lublin.humla.IHumlaService;
 import se.lublin.humla.IHumlaSession;
 import se.lublin.humla.model.IChannel;
@@ -343,9 +346,11 @@ public class ChannelListFragment extends HumlaServiceFragment implements OnChann
     }
 
     private void setupChannelList() throws RemoteException {
+        List<String> chatChannelFilter = Arrays.asList("Test_1", "Testtt", "room_1");
+
         mChannelListAdapter = new ChannelListAdapter(getActivity(), getService(),
                 mDatabaseProvider.getDatabase(), getChildFragmentManager(),
-                isShowingPinnedChannels(), mSettings.shouldShowUserCount());
+                isShowingPinnedChannels(), mSettings.shouldShowUserCount(), chatChannelFilter);
         mChannelListAdapter.setOnChannelClickListener(this);
         mChannelListAdapter.setOnUserClickListener(this);
         mChannelView.setAdapter(mChannelListAdapter);

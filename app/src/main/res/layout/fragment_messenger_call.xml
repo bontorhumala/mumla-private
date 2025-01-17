@@ -5,15 +5,6 @@
     android:layout_height="match_parent"
     android:orientation="horizontal">
 
-    <!-- Daftar Kontak di Kiri -->
-    <ListView
-        android:id="@+id/listViewContacts"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:divider="@android:color/darker_gray"
-        android:dividerHeight="1dp" />
-
     <!-- Dialpad dan Tombol Call di Kanan -->
     <LinearLayout
         android:layout_width="0dp"

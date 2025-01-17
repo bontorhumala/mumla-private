@@ -1,57 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="horizontal">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_height="fill_parent"
+    android:layout_width="fill_parent"
+    tools:ignore="NewApi"
+    android:divider="?attr/dividerVertical"
+    android:showDividers="middle" >
 
-    <!-- Daftar Kontak di Kiri -->
+    <!-- ListView untuk Daftar Pesan -->
     <ListView
-        android:id="@+id/listViewContacts"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
+        android:id="@+id/chat_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
         android:layout_weight="1"
-        android:divider="@android:color/darker_gray"
-        android:dividerHeight="1dp" />
+        android:dividerHeight="4dp"
+        android:divider="@android:color/transparent"
+        android:clipToPadding="false"
+        android:padding="8dp"
+        tools:listitem="@layout/list_chat_item" />
 
-    <!-- Konten Chat di Kanan -->
+    <!-- Chat Input -->
     <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="2"
-        android:orientation="vertical"
-        android:padding="8dp">
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:divider="?attr/dividerHorizontal"
+        android:showDividers="middle">
 
-        <!-- Chat Conversation -->
-        <TextView
-            android:id="@+id/tvChatConversation"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:background="@android:color/white"
-            android:padding="8dp"
-            android:text="Conversation goes here"
-            android:scrollbars="vertical" />
+        <ImageButton
+            android:id="@+id/chatImageSend"
+            android:layout_width="48dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="bottom"
+            android:background="?attr/selectableItemBackground"
+            android:enabled="false"
+            app:srcCompat="@android:drawable/ic_menu_upload"
+            app:tint="?android:attr/textColorPrimary" />
 
-        <!-- Chat Box -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <EditText
+            android:id="@+id/chatTextEdit"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingTop="8dp">
+            android:layout_weight="1"
+            android:minHeight="48dp"
+            android:hint="Type a message"
+            android:maxLines="4"
+            android:inputType="textAutoCorrect|textMultiLine"
+            android:imeOptions="actionSend"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp" />
 
-            <EditText
-                android:id="@+id/editTextMessage"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="Type a message" />
-
-            <Button
-                android:id="@+id/btnSendMessage"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Send" />
-        </LinearLayout>
+        <ImageButton
+            android:id="@+id/chatTextSend"
+            android:layout_width="48dp"
+            android:layout_height="match_parent"
+            app:srcCompat="@drawable/ic_action_send"
+            android:enabled="false"
+            android:layout_gravity="bottom"
+            android:background="?attr/selectableItemBackground"
+            app:tint="?android:attr/textColorPrimary" />
     </LinearLayout>
 </LinearLayout>

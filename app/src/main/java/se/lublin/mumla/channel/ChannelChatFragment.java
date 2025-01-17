@@ -449,6 +449,8 @@ public class ChannelChatFragment extends HumlaServiceFragment implements ChatTar
 
     @Override
     public void onChatTargetSelected(ChatTargetProvider.ChatTarget target) {
+        Log.d(TAG, "onChatTargetSelected target: " + target.getChannel().getId() + ", " +
+                target.getChannel().getName());
         updateChatTargetText(target);
     }
 

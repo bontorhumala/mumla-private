@@ -80,10 +80,11 @@ public class ChannelListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     private OnChannelClickListener mChannelClickListener;
     private boolean mShowChannelUserCount;
     private final FragmentManager mFragmentManager;
+    private List<String> channelFilter;
 
     public ChannelListAdapter(Context context, IHumlaService service, MumlaDatabase database,
                               FragmentManager fragmentManager, boolean showPinnedOnly,
-                              boolean showChannelUserCount) throws RemoteException {
+                              boolean showChannelUserCount, List<String> filter) throws RemoteException {
         setHasStableIds(true);
         mContext = context;
         mService = service;
@@ -97,6 +98,8 @@ public class ChannelListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         } else {
             mRootChannels.add(0);
         }
+
+        this.channelFilter = filter; // Tambahkan filter channel
 
         // Construct channel tree
         mNodes = new LinkedList<Node>();
@@ -131,23 +134,6 @@ public class ChannelListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                     }
                 }
             });
-
-            final boolean expandUsable = channel.getSubchannels().size() > 0 ||
-                    channel.getSubchannelUserCount() > 0;
-            cvh.mChannelExpandToggle.setImageResource(node.isExpanded() ?
-                    R.drawable.ic_action_expanded : R.drawable.ic_action_collapsed);
-            cvh.mChannelExpandToggle.setOnClickListener(new View.OnClickListener() {
-
-                @Override
-                public void onClick(View v) {
-                    mExpandedChannels.put(channel.getId(), !node.isExpanded());
-                    updateChannels(); // FIXME: very inefficient.
-                    notifyDataSetChanged();
-                }
-            });
-            // Dim channel expand toggle when no subchannels exist
-            cvh.mChannelExpandToggle.setEnabled(expandUsable);
-            cvh.mChannelExpandToggle.setVisibility(expandUsable ? View.VISIBLE : View.INVISIBLE);
 
             cvh.mChannelName.setText(channel.getName());
 
@@ -201,18 +187,10 @@ public class ChannelListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 }
             });
 
-            cvh.mMoreButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    ChannelMenu menu = new ChannelMenu(mContext, channel, mService, mDatabase, mFragmentManager);
-                    menu.showPopup(v);
-                }
-            });
-
             cvh.itemView.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    cvh.mMoreButton.performClick();
+//                    cvh.mMoreButton.performClick();
                     return true;
                 }
             });
@@ -313,12 +291,16 @@ public class ChannelListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             return;
         }
 
+        Log.d(TAG, "mRootChannels: " + mRootChannels);
+
         IHumlaSession session = mService.HumlaSession();
         mNodes.clear();
         try {
             for (int cid : mRootChannels) {
                 IChannel channel = session.getChannel(cid);
+                Log.d(TAG, "Fetching channel with ID: " + cid);
                 if (channel != null) {
+                    Log.d(TAG, "Found channel: " + channel.getName());
                     constructNodes(null, channel, 0, mNodes);
                 }
             }
@@ -429,26 +411,41 @@ public class ChannelListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
      * @param depth The current depth of the subtree.
      * @param nodes An accumulator to store generated nodes into.
      */
-    private void constructNodes(Node parent, IChannel channel, int depth,
-                                List<Node> nodes) {
-        Node channelNode = new Node(parent, depth, channel);
-        nodes.add(channelNode);
+    private void constructNodes(Node parent, IChannel channel, int depth, List<Node> nodes) {
+        // Skip jika ini adalah root channel
+        if (channel.getId() == 0) {
+            Log.d(TAG, "Skipping root channel: " + channel.getName());
+        } else {
+            // Tambahkan channel ke nodes
+            Node channelNode = new Node(parent, depth, channel);
+            nodes.add(channelNode);
 
+            // Log informasi channel
+            Log.d(TAG, "Channel: " + channel.getName() + " (ID: " + channel.getId() + "), Depth: " + depth);
+        }
+
+        // Cek apakah perlu melanjutkan ke subchannel
         Boolean expandSetting = mExpandedChannels.get(channel.getId());
         if ((expandSetting == null && channel.getSubchannelUserCount() == 0)
                 || (expandSetting != null && !expandSetting)) {
-            channelNode.setExpanded(false);
-            return; // Skip adding children of contracted/empty channels.
+            return; // Skip subchannel jika tidak diperluas atau kosong
         }
 
-        for (IUser user : channel.getUsers()) {
+        // Mumla IOTERA does not use user to user communication
+        /* for (IUser user : channel.getUsers()) {
             if (user == null) {
                 continue;
             }
+            Log.d(TAG, "User: " + user.getName() + " in Channel: " + channel.getName());
             nodes.add(new Node(channelNode, depth, user));
-        }
+        } */
+
+        // Iterasi subchannel dengan filter
         for (IChannel subc : channel.getSubchannels()) {
-            constructNodes(channelNode, subc, depth + 1, nodes);
+            if (channelFilter == null || channelFilter.contains(subc.getName())) {
+                constructNodes(parent, subc, depth + 1, nodes); // Rekursif untuk subchannel
+                Log.d(TAG, "Processing subchannel: " + subc.getName());
+            }
         }
     }
 
@@ -508,20 +505,16 @@ public class ChannelListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     private static class ChannelViewHolder extends RecyclerView.ViewHolder {
         public LinearLayout mChannelHolder;
-        public ImageView mChannelExpandToggle;
         public TextView mChannelName;
         public TextView mChannelUserCount;
         public ImageView mJoinButton;
-        public ImageView mMoreButton;
 
         public ChannelViewHolder(View itemView) {
             super(itemView);
             mChannelHolder = (LinearLayout) itemView.findViewById(R.id.channel_row_title);
-            mChannelExpandToggle = (ImageView) itemView.findViewById(R.id.channel_row_expand);
             mChannelName = (TextView) itemView.findViewById(R.id.channel_row_name);
             mChannelUserCount = (TextView) itemView.findViewById(R.id.channel_row_count);
             mJoinButton = (ImageView) itemView.findViewById(R.id.channel_row_join);
-            mMoreButton = (ImageView) itemView.findViewById(R.id.channel_row_more);
         }
     }
 
